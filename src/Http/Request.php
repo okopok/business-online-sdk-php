@@ -8,161 +8,169 @@ use Psr\Http\Message\UriInterface;
 
 final class Request implements RequestInterface
 {
-	use MessageTrait;
+    use MessageTrait;
 
-	/**
-	 * @var string|null
-	 */
+    /**
+     * @var string|null
+     */
     private string|null $requestTarget = null;
 
-	/**
-	 * Request constructor.
-	 * @param string $method
-	 * @param string $uri
-	 * @param array $headers
-	 * @param null $body
-	 * @param string $protocol
-	 */
+    /**
+     * Request constructor.
+     *
+     * @param string $method
+     * @param string $uri
+     * @param array $headers
+     * @param null $body
+     * @param string $protocol
+     */
     public function __construct(private string $method = 'GET', private UriInterface|string|null $uri = null, array $headers = [], mixed $body = null, string $protocol = '1.1')
-	{
-		$this->setUri($uri);
-		$this->registerStream($body);
-		$this->registerHeaders($headers);
-		$this->registerProtocolVersion($protocol);
+    {
+        $this->setUri($uri);
+        $this->registerStream($body);
+        $this->registerHeaders($headers);
+        $this->registerProtocolVersion($protocol);
 
-		if (!$this->hasHeader('host')) {
-			$this->updateHostHeaderFromUri();
-		}
-	}
+        if (!$this->hasHeader('host')) {
+            $this->updateHostHeaderFromUri();
+        }
+    }
 
-	/**
-	 * @param $uri
-	 */
-	private function setUri($uri): void
-	{
-		if ($uri instanceof UriInterface) {
-			$this->uri = $uri;
-			return;
-		}
+    /**
+     * @param $uri
+     */
+    private function setUri($uri): void
+    {
+        if ($uri instanceof UriInterface) {
+            $this->uri = $uri;
+            return;
+        }
 
-		if (is_string($uri)) {
-			$this->uri = new Uri($uri);
-		}
-	}
+        if (is_string($uri)) {
+            $this->uri = new Uri($uri);
+        }
+    }
 
-	/**
-	 * @return string|null
-	 */
-	public function getRequestTarget(): string
-	{
-		if ($this->requestTarget !== null) {
-			return $this->requestTarget;
-		}
+    private function updateHostHeaderFromUri(): void
+    {
+        $host = $this->uri->getHost();
 
-		$target = $this->uri->getPath();
-		$query = $this->uri->getQuery();
+        if ($host === '') {
+            return;
+        }
 
-		if ($target !== '' && $query !== '') {
-			$target .= '?' . $query;
-		}
+        if ($port = $this->uri->getPort()) {
+            $host .= ':'.$port;
+        }
 
-		return $target ?: '/';
-	}
+        $this->headerNames['host'] = 'Host';
+        $this->headers = [$this->headerNames['host'] => [$host]] + $this->headers;
+    }
 
-	/**
-	 * @param mixed $requestTarget
-	 * @return $this|Request
-	 */
+    /**
+     * @return string|null
+     */
+    public function getRequestTarget(): string
+    {
+        if ($this->requestTarget !== null) {
+            return $this->requestTarget;
+        }
+
+        $target = $this->uri->getPath();
+        $query = $this->uri->getQuery();
+
+        if ($target !== '' && $query !== '') {
+            $target .= '?'.$query;
+        }
+
+        return $target ?: '/';
+    }
+
+    /**
+     * @param mixed $requestTarget
+     *
+     * @return $this|Request
+     */
     public function withRequestTarget($requestTarget): RequestInterface
     {
-		if ($requestTarget === $this->requestTarget) {
-			return $this;
-		}
+        if ($requestTarget === $this->requestTarget) {
+            return $this;
+        }
 
-		if (!is_string($requestTarget) || preg_match('/\s/', $requestTarget)) {
-			throw new InvalidArgumentException(sprintf(
-				'Неверная цель запроса - "%s". Цель запроса должна быть строкой и не может содержать пробелы',
-				(is_object($requestTarget) ? get_class($requestTarget) : gettype($requestTarget))
-			));
-		}
+        if (!is_string($requestTarget) || preg_match('/\s/', $requestTarget)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Неверная цель запроса - "%s". Цель запроса должна быть строкой и не может содержать пробелы',
+                    (is_object($requestTarget) ? get_class($requestTarget) : gettype($requestTarget)),
+                ),
+            );
+        }
 
-		$new = clone $this;
-		$new->requestTarget = $requestTarget;
-		return $new;
-	}
+        $new = clone $this;
+        $new->requestTarget = $requestTarget;
+        return $new;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getMethod(): string
-	{
-		return $this->method;
-	}
+    /**
+     * @return string
+     */
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
 
-	/**
-	 * @param string $method
-	 * @return $this
-	 */
-	public function withMethod($method): Request
-	{
-		if ($method === $this->method) {
-			return $this;
-		}
+    /**
+     * @param string $method
+     *
+     * @return $this
+     */
+    public function withMethod($method): Request
+    {
+        if ($method === $this->method) {
+            return $this;
+        }
 
-		if (!is_string($method)) {
-			throw new InvalidArgumentException(sprintf(
-				'Неверный метод. Метод должен быть строкой, получен - %s.',
-				(is_object($method) ? get_class($method) : gettype($method))
-			));
-		}
+        if (!is_string($method)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Неверный метод. Метод должен быть строкой, получен - %s.',
+                    (is_object($method) ? get_class($method) : gettype($method)),
+                ),
+            );
+        }
 
-		$new = clone $this;
-		$new->method = $method;
-		return $new;
-	}
+        $new = clone $this;
+        $new->method = $method;
+        return $new;
+    }
 
-	/**
-	 * @return UriInterface
-	 */
-	public function getUri(): UriInterface
-	{
-		return $this->uri;
-	}
+    /**
+     * @return UriInterface
+     */
+    public function getUri(): UriInterface
+    {
+        return $this->uri;
+    }
 
-	/**
-	 * @param UriInterface $uri
-	 * @param false $preserveHost
-	 * @return $this
-	 */
-	public function withUri(UriInterface $uri, $preserveHost = false): Request
-	{
-		if ($uri === $this->uri) {
-			return $this;
-		}
+    /**
+     * @param UriInterface $uri
+     * @param false $preserveHost
+     *
+     * @return $this
+     */
+    public function withUri(UriInterface $uri, $preserveHost = false): Request
+    {
+        if ($uri === $this->uri) {
+            return $this;
+        }
 
-		$new = clone $this;
-		$new->uri = $uri;
+        $new = clone $this;
+        $new->uri = $uri;
 
-		if (!$preserveHost || !$this->hasHeader('host')) {
-			$new->updateHostHeaderFromUri();
-		}
+        if (!$preserveHost || !$this->hasHeader('host')) {
+            $new->updateHostHeaderFromUri();
+        }
 
-		return $new;
-	}
-
-	private function updateHostHeaderFromUri(): void
-	{
-		$host = $this->uri->getHost();
-
-		if ($host === '') {
-			return;
-		}
-
-		if ($port = $this->uri->getPort()) {
-			$host .= ':' . $port;
-		}
-
-		$this->headerNames['host'] = 'Host';
-		$this->headers = [$this->headerNames['host'] => [$host]] + $this->headers;
-	}
+        return $new;
+    }
 }

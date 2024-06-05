@@ -2,8 +2,8 @@
 
 namespace bru\api\Exceptions;
 
-use Psr\Http\Client\ClientExceptionInterface;
 use Exception;
+use Psr\Http\Client\ClientExceptionInterface;
 
 class HttpClientException extends Exception implements ClientExceptionInterface
 {
