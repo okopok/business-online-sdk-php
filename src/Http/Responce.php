@@ -9,7 +9,7 @@ final class Responce implements ResponseInterface
 {
 	use MessageTrait;
 
-	private static $phrases = [
+    private static array $phrases = [
 		100 => 'Continue',
 		101 => 'Switching Protocols',
 		102 => 'Processing',
@@ -77,28 +77,29 @@ final class Responce implements ResponseInterface
 	/**
 	 * @var int
 	 */
-	private $statusCode;
+    private int $statusCode;
 
 	/**
 	 * @var string
 	 */
-	private $reasonPhrase;
+    private string $reasonPhrase;
 
 
 	/**
 	 * @return int|null
 	 */
-	public function getStatusCode()
-	{
+    public function getStatusCode(): int
+    {
 		return $this->statusCode;
 	}
 
 	/**
 	 * @param int $code
 	 * @param string $reasonPhrase
+     *
 	 * @return Responce
 	 */
-	public function withStatus($code, $reasonPhrase = ''): Responce
+    public function withStatus(int $code, string $reasonPhrase = ''): self
 	{
 		if (!is_int($code)) {
 			if (!is_numeric($code) || is_float($code)) {

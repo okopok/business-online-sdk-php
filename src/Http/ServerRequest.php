@@ -3,6 +3,7 @@
 namespace bru\api\Http;
 
 use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\UriInterface;
@@ -11,72 +12,26 @@ final class ServerRequest implements ServerRequestInterface
 {
 	use MessageTrait;
 
-	/**
-	 * @var array
-	 */
-	private $attributes = [];
+    private string|null $requestTarget = null;
+    private array $attributes = [];
 
-	/**
-	 * @var array
-	 */
-	private $cookieParams = [];
-
-	/**
-	 * @var array|object|null
-	 */
-	private $parsedBody;
-
-	/**
-	 * @var array
-	 */
-	private $queryParams;
-
-	/**
-	 * @var array
-	 */
-	private $serverParams;
-
-	/**
-	 * @var array
-	 */
-	private $uploadedFiles;
-
-	/**
-	 * @var string
-	 */
-	private $method = 'GET';
-
-	/**
-	 * @var UriInterface
-	 */
-	private $uri;
-
-	/**
-	 * @var null
-	 */
-	private $requestTarget = null;
-
-	public function __construct(
-		array $serverParams = [],
-		array $uploadedFiles = [],
-		array $cookieParams = [],
-		array $queryParams = [],
-		$parsedBody = null,
-		string $method = 'GET',
-		$uri = '',
-		array $headers = [],
-		$body = null,
-		string $protocol = '1.1'
+    public function __construct(
+        private array $serverParams = [],
+        private array $uploadedFiles = [],
+        private array $cookieParams = [],
+        private array $queryParams = [],
+        private mixed $parsedBody = null,
+        private string $method = 'GET',
+        private UriInterface|string|null $uri = null,
+        private array $headers = [],
+        private mixed $body = null,
+        private string $protocol = '1.1',
 	)
 	{
 		$this->validateUploadedFiles($uploadedFiles);
-		$this->uploadedFiles = $uploadedFiles;
-		$this->serverParams = $serverParams;
-		$this->cookieParams = $cookieParams;
-		$this->queryParams = $queryParams;
-		$this->parsedBody = $parsedBody;
-		$this->method = $method;
-		$this->setUri($uri);
+        if ($uri === null) {
+            $this->setUri($uri);
+        }
 
 		$this->registerStream($body);
 		$this->registerHeaders($headers);
@@ -110,7 +65,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param mixed $requestTarget
 	 * @return $this
 	 */
-	public function withRequestTarget($requestTarget): ServerRequest
+    public function withRequestTarget($requestTarget): self
 	{
 		if ($requestTarget === $this->requestTarget) {
 			return $this;
@@ -138,19 +93,13 @@ final class ServerRequest implements ServerRequestInterface
 
 	/**
 	 * @param string $method
-	 * @return string
-	 */
-	public function withMethod($method): string
+     *
+     * @return RequestInterface
+     */
+    public function withMethod(string $method): RequestInterface
 	{
 		if ($method === $this->method) {
 			return $this;
-		}
-
-		if (!is_string($method)) {
-			throw new InvalidArgumentException(sprintf(
-				'Неверный метод. Метод должен быть строкой, получен - %s.',
-				(is_object($method) ? get_class($method) : gettype($method))
-			));
 		}
 
 		$new = clone $this;
@@ -158,8 +107,8 @@ final class ServerRequest implements ServerRequestInterface
 		return $new;
 	}
 
-	public function getUri()
-	{
+    public function getUri(): UriInterface
+    {
 		return $this->uri;
 	}
 
@@ -168,7 +117,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param false $preserveHost
 	 * @return $this
 	 */
-	public function withUri(UriInterface $uri, $preserveHost = false): ServerRequest
+    public function withUri(UriInterface $uri, $preserveHost = false): RequestInterface
 	{
 		if ($uri === $this->uri) {
 			return $this;
@@ -204,7 +153,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param array $cookies
 	 * @return ServerRequest
 	 */
-	public function withCookieParams(array $cookies): ServerRequest
+    public function withCookieParams(array $cookies): self
 	{
 		$new = clone $this;
 		$new->cookieParams = $cookies;
@@ -223,7 +172,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param array $query
 	 * @return ServerRequest
 	 */
-	public function withQueryParams(array $query): ServerRequest
+    public function withQueryParams(array $query): self
 	{
 		$new = clone $this;
 		$new->queryParams = $query;
@@ -242,7 +191,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param array $uploadedFiles
 	 * @return ServerRequest
 	 */
-	public function withUploadedFiles(array $uploadedFiles): ServerRequest
+    public function withUploadedFiles(array $uploadedFiles): self
 	{
 		$this->validateUploadedFiles($uploadedFiles);
 		$new = clone $this;
@@ -262,7 +211,7 @@ final class ServerRequest implements ServerRequestInterface
 	 * @param array|object|null $data
 	 * @return ServerRequest
 	 */
-	public function withParsedBody($data): ServerRequest
+    public function withParsedBody($data): self
 	{
 		if (!is_array($data) && !is_object($data) && $data !== null) {
 			throw new InvalidArgumentException(sprintf(
@@ -276,18 +225,19 @@ final class ServerRequest implements ServerRequestInterface
 		return $new;
 	}
 
-	public function getAttributes()
-	{
+    public function getAttributes(): array
+    {
 		return $this->attributes;
 	}
 
 	/**
 	 * @param string $name
 	 * @param null $default
+     *
 	 * @return mixed|null
 	 */
-	public function getAttribute($name, $default = null)
-	{
+    public function getAttribute(string $name, $default = null): mixed
+    {
 		if (array_key_exists($name, $this->attributes)) {
 			return $this->attributes[$name];
 		}
@@ -298,9 +248,10 @@ final class ServerRequest implements ServerRequestInterface
 	/**
 	 * @param string $name
 	 * @param mixed $value
+     *
 	 * @return $this
 	 */
-	public function withAttribute($name, $value): ServerRequest
+    public function withAttribute(string $name, mixed $value): self
 	{
 		if (array_key_exists($name, $this->attributes) && $this->attributes[$name] === $value) {
 			return $this;
@@ -313,9 +264,10 @@ final class ServerRequest implements ServerRequestInterface
 
 	/**
 	 * @param string $name
+     *
 	 * @return $this
 	 */
-	public function withoutAttribute($name): ServerRequest
+    public function withoutAttribute(string $name): self
 	{
 		if (!array_key_exists($name, $this->attributes)) {
 			return $this;
@@ -326,22 +278,13 @@ final class ServerRequest implements ServerRequestInterface
 		return $new;
 	}
 
-	private function setUri($uri): void
+    private function setUri(UriInterface|string $uri): void
 	{
 		if ($uri instanceof UriInterface) {
 			$this->uri = $uri;
 			return;
 		}
-
-		if (is_string($uri)) {
-			$this->uri = new Uri($uri);
-			return;
-		}
-
-		throw new InvalidArgumentException(sprintf(
-			'Неверный формат URI - "%s". URI должен быть строкой, null либо реализовывать интерфейс "\Psr\Http\Message\UriInterface".',
-			(is_object($uri) ? get_class($uri) : gettype($uri))
-		));
+        $this->uri = new Uri($uri);
 	}
 
 	private function updateHostHeaderFromUri(): void
@@ -371,7 +314,7 @@ final class ServerRequest implements ServerRequestInterface
 				continue;
 			}
 
-			if (!UploadedFileInterface instanceof $file) {
+            if (!($file instanceof UploadedFileInterface)) {
 				throw new InvalidArgumentException(sprintf(
 					'Неверный объект в структуре загружаемых файлов.'
 					. '"%s" не реализует интерфейс "\Psr\Http\Message\UploadedFileInterface".',

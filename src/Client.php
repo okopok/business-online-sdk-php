@@ -15,24 +15,23 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LogLevel;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-
-use function trim;
-use function is_array;
-use function is_string;
-use function strlen;
 use function array_merge;
-use function md5;
-use function http_build_query;
-use function strtoupper;
-use function count;
-use function json_encode;
-use function json_decode;
-use function ksort;
 use function array_walk_recursive;
-use function is_null;
-use function sleep;
-use function date;
 use function call_user_func;
+use function count;
+use function date;
+use function http_build_query;
+use function is_array;
+use function is_null;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function ksort;
+use function md5;
+use function sleep;
+use function strlen;
+use function strtoupper;
+use function trim;
 
 
 final class Client implements LoggerAwareInterface
@@ -42,63 +41,27 @@ final class Client implements LoggerAwareInterface
 
 	/**
 	 * @var string
-	 * Имя аккаунта
-	 */
-	private $account;
-
-	/**
-	 * @var int
-	 * ID интеграции
-	 */
-	private $app_id;
-
-	/**
-	 * @var string
-	 * Секретный ключ
-	 */
-	private $secret;
-
-	/**
-	 * @var string
 	 * Токен
 	 */
-	private $token;
-
-	/**
-	 * @var bool
-	 * Спать при превышении лимита запросов
-	 */
-	private $sleepy;
-
-	/**
-	 * @var object
-	 * Объект для работы с кэшем
-	 */
-	private $cache;
-
-	/**
-	 * @var ClientInterface
-	 *  Http - клиент
-	 */
-	private $httpClient;
+    private string $token;
 
 	/**
 	 * @var string
 	 * Хост
 	 */
-	private $host;
+    private string $host;
 
 	/**
 	 * @var int
 	 * Порт
 	 */
-	private $port = 443;
+    private int $port = 443;
 
 	/**
 	 * @var string
 	 * Подготовленный URL
 	 */
-	private $url;
+    private string $url;
 
 
 	/**
@@ -126,6 +89,7 @@ final class Client implements LoggerAwareInterface
 	 * @param false $sleepy Засыпать при превышении лимита запросов
 	 * @param CacheInterface|null $cache Объект для кэширования
 	 * @param ClientInterface|null $httpClient HTTP - клиент
+     *
 	 * @throws BruApiClientException
 	 * @throws ClientExceptionInterface
 	 * @throws Exceptions\SimpleFileCacheInvalidArgumentException
@@ -133,7 +97,25 @@ final class Client implements LoggerAwareInterface
 	 * @throws JsonException
 	 * @throws SimpleFileCacheException
 	 */
-	public function __construct(string $account, int $app_id, string $secret, bool $sleepy = false, CacheInterface $cache = null, ClientInterface $httpClient = null)
+    public function __construct(
+        /**
+         * Имя аккаунта
+         */
+        private string $account,
+        /**
+         * ID интеграции
+         */
+        private int $app_id,
+        /**
+         * Секретный ключ
+         */
+        private string $secret,
+        /**
+         * Спать при превышении лимита запросов
+         */
+        private bool|null $sleepy = false,
+        private CacheInterface|null $cache = null,
+        private ClientInterface|null $httpClient = null)
 	{
 		$tmpAccountData = explode(':', trim($account, '/'));
 		if (count($tmpAccountData) === 3) {
@@ -145,10 +127,6 @@ final class Client implements LoggerAwareInterface
 			$this->account = 'https://' . $account . '.business.ru';
 			$this->host = $account . '.business.ru';
 		}
-
-		$this->app_id = $app_id;
-		$this->secret = $secret;
-		$this->sleepy = $sleepy;
 
 		$this->cache = $cache ?? new SimpleFileCache();
 		$this->httpClient = $httpClient ?? new SimpleHttpClient();
@@ -178,14 +156,15 @@ final class Client implements LoggerAwareInterface
 	 *
 	 * @param string $model Модель
 	 * @param array $params Параметры
+	 *
 	 * @return array|int|mixed|string[]
 	 * @throws InvalidArgumentException
 	 * @throws JsonException
-	 * @throws SimpleFileCacheException|ClientExceptionInterface Получить все записи модели (с условиями в $params)
+     * @throws ClientExceptionInterface Получить все записи модели (с условиями в $params)
 	 * @throws BruApiClientException
-	 */
-	public function requestAll(string $model, array $params = [])
-	{
+     */
+    public function requestAll(string $model, array $params = []): mixed
+    {
 		$method = 'GET';
 
 		if (!isset($params['limit'])) {
@@ -250,39 +229,39 @@ final class Client implements LoggerAwareInterface
 	public static function check(int $app_id, string $secret): bool
 	{
 		return self::checkN($app_id, $secret);
-	}
+    }
 
 
-	/**
-	 * Отправить уведомление пользователям.
-	 * Требуемые параметры:
-	 *  - $employees - ID пользователя либо массив с ID пользователей адресатов уведомления
-	 *  - $header - Заголовок уведомления
-	 *  - $message - Сообщение
-	 * Необязательные параметры:
-	 *  - $document_id - ID прикрепляемого документа
-	 *  - $model_name - Модель прикрепляемого документа
-	 *  - $action - Текст ссылки на документ в уведомлении
-	 *  - $seconds - Задержка в секундах, перед тем как пользователи получат уведомление
-	 *
-	 * Подробнее можно узнать на https://developers.business.ru/
-	 *
-	 * @param $employees string|array ID пользователя или пользователей
-	 * @param string $header Заголовок
-	 * @param string $message Сообщение
-	 * @param null $document_id ID документа
-	 * @param null $model_name Название модели документа
-	 * @param null $action Текст ссылки на документ
-	 * @param int $seconds Задержка в секундах
-	 * @return int|mixed|string[]
-	 * @throws BruApiClientException
-	 * @throws ClientExceptionInterface
-	 * @throws InvalidArgumentException
-	 * @throws JsonException
-	 * @throws SimpleFileCacheException
-	 */
-	public function sendNotificationSystem(array $employees, string $header, string $message, $document_id = null, $model_name = null, $action = null, $seconds = 0)
-	{
+    /**
+     * Отправить уведомление пользователям.
+     * Требуемые параметры:
+     *  - $employees - ID пользователя либо массив с ID пользователей адресатов уведомления
+     *  - $header - Заголовок уведомления
+     *  - $message - Сообщение
+     * Необязательные параметры:
+     *  - $document_id - ID прикрепляемого документа
+     *  - $model_name - Модель прикрепляемого документа
+     *  - $action - Текст ссылки на документ в уведомлении
+     *  - $seconds - Задержка в секундах, перед тем как пользователи получат уведомление
+     *
+     * Подробнее можно узнать на https://developers.business.ru/
+     *
+     * @param array $employees string|array ID пользователя или пользователей
+     * @param string $header Заголовок
+     * @param string $message Сообщение
+     * @param null $document_id ID документа
+     * @param null $model_name Название модели документа
+     * @param null $action Текст ссылки на документ
+     * @param int $seconds Задержка в секундах
+     *
+     * @return int|mixed|string[]
+     * @throws BruApiClientException
+     * @throws ClientExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     */
+    public function sendNotificationSystem(array $employees, string $header, string $message, $document_id = null, $model_name = null, $action = null, int $seconds = 0): mixed
+    {
 		$data['employee_ids'] = $employees;
 		$data['header'] = $header;
 		$data['message'] = $message;
@@ -338,14 +317,14 @@ final class Client implements LoggerAwareInterface
 	 * @param string $method Метод
 	 * @param string $model Модель
 	 * @param array $params Параметры
+	 *
 	 * @return int|mixed|string[]
 	 * @throws JsonException
-	 * @throws SimpleFileCacheException
-	 * @throws ClientExceptionInterface
+     * @throws ClientExceptionInterface
 	 * @throws InvalidArgumentException|BruApiClientException
-	 */
-	public function request(string $method, string $model, array $params = [])
-	{
+     */
+    public function request(string $method, string $model, array $params = []): mixed
+    {
 		$result = $this->sendRequest(strtoupper($method), $model, $params);
 		//Токен не прошел
 		if ($result === 401) {
@@ -375,9 +354,9 @@ final class Client implements LoggerAwareInterface
 	 * @throws InvalidArgumentException
 	 * @throws JsonException
 	 * @throws SimpleFileCacheException
-	 */
-	public function graphQL(string $data)
-	{
+     */
+    public function graphQL(string $data): mixed
+    {
 		$uri = new Uri();
 
 		$scheme = explode(':', $this->account);
@@ -420,25 +399,28 @@ final class Client implements LoggerAwareInterface
 				throw new BruApiClientException('Данные для API неверные.');
 			}
 			return $this->graphQL($data);
-		}
-	}
+        }
+        throw new BruApiClientException('Не получилось вернуть данные из graphQl');
+    }
 
-	/**
-	 * Получить подотовленный URL для запроса в формате массива где
-	 * 'url' => Адрес для запроса
-	 * 'data' => Тело запроса (Не актуально для метода GET)
-	 * @param string $method Метод
-	 * @param string $model Модель
-	 * @param array $params Параметры
-	 */
+    /**
+     * Получить подотовленный URL для запроса в формате массива где
+     * 'url' => Адрес для запроса
+     * 'data' => Тело запроса (Не актуально для метода GET)
+     *
+     * @param string $method Метод
+     * @param string $model Модель
+     * @param array $params Параметры
+     *
+     * @throws JsonException
+     */
 	public function getPreparedUrl(string $method, string $model, array $params = []): array
 	{
 		$method = strtoupper($method);
 		$result = $this->account . '/api/rest/' . $model . '.json';
 
-		if (isset($params['images']))
-			if (is_array($params['images']))
-				$params['images'] = json_encode($params['images'], JSON_THROW_ON_ERROR);
+        if (isset($params['images']) && is_array($params['images']))
+            $params['images'] = json_encode($params['images'], JSON_THROW_ON_ERROR);
 
 		$params['app_id'] = $this->app_id;
 		ksort($params);
@@ -469,9 +451,9 @@ final class Client implements LoggerAwareInterface
 	 * @param array $params Параметры
 	 * @return mixed
 	 * @throws JsonException|ClientExceptionInterface
-	 */
-	private function sendRequest(string $method, string $model, array $params = [])
-	{
+     */
+    private function sendRequest(string $method, string $model, array $params = []): mixed
+    {
 		$method = strtoupper($method);
 
 		$request = new Request();
@@ -487,14 +469,13 @@ final class Client implements LoggerAwareInterface
 		$request = $request->withRequestTarget('api/rest/' . $model . '.json');
 		$request = $request->withMethod($method);
 
-		if (isset($params['images']))
-			if (is_array($params['images']))
-				$params['images'] = json_encode($params['images'], JSON_THROW_ON_ERROR);
+        if (isset($params['images']) && is_array($params['images']))
+            $params['images'] = json_encode($params['images'], JSON_THROW_ON_ERROR);
 
 		$params['app_id'] = $this->app_id;
 		ksort($params);
 		array_walk_recursive($params, static function (&$val) {
-			if (is_null($val)) {
+            if ($val === null) {
 				$val = '';
 			}
 		});
@@ -559,9 +540,9 @@ final class Client implements LoggerAwareInterface
 	 * @throws BruApiClientException
 	 * @throws JsonException
 	 * @throws ClientExceptionInterface
-	 */
-	private function rSleep($method, $model, $params)
-	{
+     */
+    private function rSleep($method, $model, $params): mixed
+    {
 		$this->log(LogLevel::INFO, 'Превышен лимит запросов, пауза запроса - 30с');
 		sleep(30);
 		$result = $this->sendRequest($method, $model, $params);
@@ -569,17 +550,19 @@ final class Client implements LoggerAwareInterface
 			return $this->rSleep($method, $model, $params);
 		}
 		return $result;
-	}
+    }
 
 
-	/**
-	 * Восстановить токен
-	 * Отправит запрос к API на восстановление токена
-	 * в случае успеха вернет строку с токеном
-	 * @return string|array Токен
-	 * @throws ClientExceptionInterface
-	 * @throws JsonException|BruApiClientException
-	 */
+    /**
+     * Восстановить токен
+     * Отправит запрос к API на восстановление токена
+     * в случае успеха вернет строку с токеном
+     *
+     * @return string Токен
+     * @throws BruApiClientException
+     * @throws ClientExceptionInterface
+     * @throws JsonException
+     */
 	private function getNewToken(): string
 	{
 		$this->token = '';
@@ -592,7 +575,7 @@ final class Client implements LoggerAwareInterface
 
 		$errorMessage = 'Не удалось получить токен.';
 
-		if (is_array($result) && isset($result['error_code']) && !empty($result['error_code'])) $errorMessage .= ' Код ошибки: ' . $result['error_code'];
+        if (is_array($result) && !empty($result['error_code'])) $errorMessage .= ' Код ошибки: '.$result['error_code'];
 
 		throw new BruApiClientException($errorMessage);
 	}

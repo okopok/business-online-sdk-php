@@ -3,19 +3,15 @@
 namespace bru\api;
 
 use bru\api\Exceptions\SimpleFileCacheException;
-use bru\api\Exceptions\SimpleFileCacheInvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
-
-use function is_dir;
-use function mkdir;
-use function is_string;
-use function is_readable;
 use function file_exists;
 use function file_get_contents;
-use function is_writable;
 use function file_put_contents;
+use function is_dir;
+use function is_readable;
+use function is_writable;
+use function mkdir;
 use function unlink;
-
 
 final class SimpleFileCache implements CacheInterface
 {
@@ -24,7 +20,7 @@ final class SimpleFileCache implements CacheInterface
 	 * @var string
 	 * Домашняя директория библиотеки
 	 */
-	private $cachePath = __DIR__ . DIRECTORY_SEPARATOR . 'cache';
+    private string $cachePath = __DIR__.DIRECTORY_SEPARATOR.'cache';
 
 	/**
 	 * SimpleFileCache constructor.
@@ -38,24 +34,21 @@ final class SimpleFileCache implements CacheInterface
 		}
 	}
 
-	/**
-	 * @param string $key
-	 * @param null $default
-	 * @return false|mixed|string
-	 * @throws SimpleFileCacheException
-	 * @throws SimpleFileCacheInvalidArgumentException
-	 */
-	public function get($key, $default = null)
-	{
-		if (!is_string($key)) throw new SimpleFileCacheInvalidArgumentException('Ключ должен быть строкой');
-
+    /**
+     * @param string $key
+     * @param null $default
+     *
+     * @return mixed
+     * @throws SimpleFileCacheException
+     */
+    public function get(string $key, $default = null): mixed
+    {
 		$cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
 		//Нет прав для чтения
 		if (!is_readable($cacheFile))
 		{
 			throw new SimpleFileCacheException('Недостаточно прав для чтения кэша /src/cache/');
-			return false;
 		}
 
 		//Нет кеша с полученным ключом
@@ -72,21 +65,19 @@ final class SimpleFileCache implements CacheInterface
 	 * @param string $key
 	 * @param mixed $value
 	 * @param null $ttl
+     *
 	 * @return bool
 	 * @throws SimpleFileCacheException
-	 * @throws SimpleFileCacheInvalidArgumentException
 	 */
-	public function set($key, $value, $ttl = null): bool
+    public function set(string $key, mixed $value, $ttl = null): bool
 	{
-		if (!is_string($key)) throw new SimpleFileCacheInvalidArgumentException('Ключ должен быть строкой');
 
-		$cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
+        $cacheFile = $this->cachePath.DIRECTORY_SEPARATOR.$key;
 
 		//Нет прав для записи
 		if (!is_writable($this->cachePath))
 		{
 			throw new SimpleFileCacheException('Недостаточно прав для записи кэша /src/cache/');
-			return false;
 		}
 
 		if (file_put_contents($cacheFile, $value)) return true;
@@ -95,12 +86,11 @@ final class SimpleFileCache implements CacheInterface
 
 	/**
 	 * @param string $key
-	 * @return bool|void
-	 * @throws SimpleFileCacheInvalidArgumentException
+     *
+     * @return bool
 	 */
-	public function delete($key): bool
+    public function delete(string $key): bool
 	{
-		if (!is_string($key)) throw new SimpleFileCacheInvalidArgumentException('Ключ должен быть строкой');
 		$cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
 		if (file_exists($cacheFile)) {
@@ -110,34 +100,37 @@ final class SimpleFileCache implements CacheInterface
 		return false;
 	}
 
-	public function clear()
-	{
+    public function clear(): bool
+    {
 		// TODO: Implement clear() method.
+        return false;
 	}
 
-	public function getMultiple($keys, $default = null)
-	{
+    public function getMultiple($keys, $default = null): iterable
+    {
 		// TODO: Implement getMultiple() method.
+        return [];
 	}
 
-	public function setMultiple($values, $ttl = null)
-	{
+    public function setMultiple($values, $ttl = null): bool
+    {
 		// TODO: Implement setMultiple() method.
+        return false;
 	}
 
-	public function deleteMultiple($keys)
-	{
+    public function deleteMultiple($keys): bool
+    {
 		// TODO: Implement deleteMultiple() method.
+        return false;
 	}
 
 	/**
 	 * @param string $key
+     *
 	 * @return bool
-	 * @throws SimpleFileCacheInvalidArgumentException
 	 */
-	public function has($key): bool
+    public function has(string $key): bool
 	{
-		if (!is_string($key)) throw new SimpleFileCacheInvalidArgumentException('Ключ должен быть строкой');
 		$cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
 		if (file_exists($cacheFile)) return true;

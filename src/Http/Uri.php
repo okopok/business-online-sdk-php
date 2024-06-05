@@ -4,22 +4,21 @@ namespace bru\api\Http;
 
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
-
-use function parse_url;
-use function is_string;
-use function ltrim;
-use function preg_replace;
-use function sprintf;
-use function is_object;
 use function get_class;
 use function gettype;
-use function rawurlencode;
-use function preg_replace_callback;
-use function is_numeric;
-use function is_float;
-use function strtolower;
 use function implode;
 use function in_array;
+use function is_float;
+use function is_numeric;
+use function is_object;
+use function is_string;
+use function ltrim;
+use function parse_url;
+use function preg_replace;
+use function preg_replace_callback;
+use function rawurlencode;
+use function sprintf;
+use function strtolower;
 
 final class Uri implements UriInterface
 {
@@ -31,42 +30,42 @@ final class Uri implements UriInterface
 	/**
 	 * @var string
 	 */
-	private $scheme = '';
+    private string $scheme = '';
 
 	/**
 	 * @var string
 	 */
-	private $userInfo = '';
+    private string $userInfo = '';
 
 	/**
 	 * @var string
 	 */
-	private $host = '';
+    private string $host = '';
 
 	/**
 	 * @var int|null
 	 */
-	private $port = null;
+    private mixed $port = null;
 
 	/**
 	 * @var string
 	 */
-	private $path = '';
+    private string $path = '';
 
 	/**
 	 * @var string
 	 */
-	private $query = '';
+    private string $query = '';
 
 	/**
 	 * @var string
 	 */
-	private $fragment = '';
+    private string $fragment = '';
 
 	/**
 	 * @var string|null
 	 */
-	private $cache;
+    private string|null $cache;
 
 	/**
 	 * Uri constructor.
@@ -104,8 +103,8 @@ final class Uri implements UriInterface
 		return $this->scheme;
 	}
 
-	public function getAuthority()
-	{
+    public function getAuthority(): string
+    {
 		if (($authority = $this->host) === '') {
 			return '';
 		}
@@ -140,8 +139,8 @@ final class Uri implements UriInterface
 	/**
 	 * @return int|null
 	 */
-	public function getPort()
-	{
+    public function getPort(): int|null
+    {
 		return $this->port;
 	}
 
@@ -171,9 +170,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param string $scheme
+     *
 	 * @return $this
 	 */
-	public function withScheme($scheme): Uri
+    public function withScheme(string $scheme): self
 	{
 		$this->checkStringType($scheme, 'scheme', __METHOD__);
 		$schema = $this->normalizeScheme($scheme);
@@ -190,9 +190,10 @@ final class Uri implements UriInterface
 	/**
 	 * @param string $user
 	 * @param null $password
+     *
 	 * @return $this
 	 */
-	public function withUserInfo($user, $password = null): Uri
+    public function withUserInfo(string $user, $password = null): self
 	{
 		$this->checkStringType($user, 'user', __METHOD__);
 
@@ -213,9 +214,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param string $host
+     *
 	 * @return $this
 	 */
-	public function withHost($host): Uri
+    public function withHost(string $host): self
 	{
 		$this->checkStringType($host, 'host', __METHOD__);
 		$host = $this->normalizeHost($host);
@@ -231,9 +233,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param int|null $port
+     *
 	 * @return $this
 	 */
-	public function withPort($port): Uri
+    public function withPort(int|null $port): self
 	{
 		$port = $this->normalizePort($port);
 
@@ -248,9 +251,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param string $path
+     *
 	 * @return $this
 	 */
-	public function withPath($path): Uri
+    public function withPath(string $path): self
 	{
 		$this->checkStringType($path, 'path', __METHOD__);
 		$path = $this->normalizePath($path);
@@ -266,9 +270,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param string $query
+     *
 	 * @return $this
 	 */
-	public function withQuery($query): Uri
+    public function withQuery(string $query): self
 	{
 		$this->checkStringType($query, 'query string', __METHOD__);
 		$query = $this->normalizeQuery($query);
@@ -284,9 +289,10 @@ final class Uri implements UriInterface
 
 	/**
 	 * @param string $fragment
+     *
 	 * @return $this
 	 */
-	public function withFragment($fragment): Uri
+    public function withFragment(string $fragment): self
 	{
 		$this->checkStringType($fragment, 'URI fragment', __METHOD__);
 		$fragment = $this->normalizeFragment($fragment);
@@ -357,7 +363,7 @@ final class Uri implements UriInterface
 	 * @param string|null $pass
 	 * @return string
 	 */
-	private function normalizeUserInfo(string $user, ?string $pass = null): string
+    private function normalizeUserInfo(string $user, string|null $pass = null): string
 	{
 		if ($user === '') {
 			return '';
@@ -382,11 +388,12 @@ final class Uri implements UriInterface
 		return strtolower($host);
 	}
 
-	/**
-	 * @param $port
-	 * @return int|null
-	 */
-	private function normalizePort($port): ?int
+    /**
+     * @param mixed $port
+     *
+     * @return int|null
+     */
+    private function normalizePort(mixed $port): ?int
 	{
 		if ($port === null) {
 			return null;
@@ -422,8 +429,14 @@ final class Uri implements UriInterface
 		}
 
 		$path = $this->encode($path, '/(?:[^a-zA-Z0-9_\-\.~:@&=\+\$,\/;%]+|%(?![A-Fa-f0-9]{2}))/');
-		return $path === '' ? '' : (($path[0] === '/') ? '/' . ltrim($path, '/') : $path);
-	}
+        if ($path === '') {
+            return '';
+        }
+        if ($path[0] === '/') {
+            return '/'.ltrim($path, '/');
+        }
+        return $path;
+    }
 
 	/**
 	 * @param string $query
@@ -463,7 +476,7 @@ final class Uri implements UriInterface
 	{
 		return (string) preg_replace_callback(
 			$pattern,
-			function ($m)
+            static function ($m)
 			{
 				return rawurlencode($m[0]);
 			},

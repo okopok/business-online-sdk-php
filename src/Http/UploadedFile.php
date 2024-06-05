@@ -6,23 +6,21 @@ use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
-
 use function array_key_exists;
-use function sprintf;
-use function implode;
 use function array_keys;
-use function is_string;
-use function is_resource;
-use function is_object;
-use function gettype;
-use function get_class;
-use function is_dir;
-use function is_writable;
-use function strpos;
-use function rename;
-use function fopen;
 use function fclose;
+use function fopen;
 use function fwrite;
+use function get_class;
+use function gettype;
+use function implode;
+use function is_dir;
+use function is_object;
+use function is_resource;
+use function is_string;
+use function is_writable;
+use function rename;
+use function sprintf;
 
 final class UploadedFile implements UploadedFileInterface
 {
@@ -38,39 +36,39 @@ final class UploadedFile implements UploadedFileInterface
 	];
 
 	/**
-	 * @var StreamInterface
+     * @var StreamInterface|null
 	 */
-	private $stream = null;
+    private StreamInterface|null $stream = null;
 
 	/**
 	 * @var string|null;
 	 */
-	private $file;
+    private string|null $file;
 
 	/**
 	 * @var int
 	 */
-	private $size;
+    private int $size;
 
 	/**
 	 * @var int
 	 */
-	private $error;
+    private int $error;
 
 	/**
 	 * @var string|null;
 	 */
-	private $clientFilename;
+    private string|null $clientFilename;
 
 	/**
 	 * @var string|null;
 	 */
-	private $clientMediaType;
+    private string|null $clientMediaType;
 
 	/**
 	 * @var bool
 	 */
-	private $isMoved = false;
+    private bool $isMoved = false;
 
 	/**
 	 * UploadedFile constructor.
@@ -84,8 +82,8 @@ final class UploadedFile implements UploadedFileInterface
 		$streamOrFile,
 		int $size,
 		int $error,
-		string $clientFilename = null,
-		string $clientMediaType = null
+        string|null $clientFilename = null,
+        string|null $clientMediaType = null,
 	)
 	{
 		if (!array_key_exists($error, self::ERRORS)) {
@@ -127,10 +125,10 @@ final class UploadedFile implements UploadedFileInterface
 	}
 
 	/**
-	 * @return Stream|StreamInterface
+     * @return StreamInterface
 	 */
-	public function getStream()
-	{
+    public function getStream(): StreamInterface
+    {
 		if ($this->error !== UPLOAD_ERR_OK) {
 			throw new RuntimeException(self::ERRORS[$this->error]);
 		}
@@ -149,7 +147,7 @@ final class UploadedFile implements UploadedFileInterface
 	/**
 	 * @param string $targetPath
 	 */
-	public function moveTo($targetPath): void
+    public function moveTo(string $targetPath): void
 	{
 		if ($this->error !== UPLOAD_ERR_OK) {
 			throw new RuntimeException(self::ERRORS[$this->error]);
@@ -157,13 +155,6 @@ final class UploadedFile implements UploadedFileInterface
 
 		if ($this->isMoved) {
 			throw new RuntimeException('Файл не может быть перемещен, так как он уже был перемещен ранее.');
-		}
-
-		if (!is_string($targetPath)) {
-			throw new InvalidArgumentException(sprintf(
-				'Неверный формат пути перемещаемого файла - "%s". Путь должен передаваться в виде строки',
-				(is_object($targetPath) ? get_class($targetPath) : gettype($targetPath))
-			));
 		}
 
 		if (empty($targetPath)) {
@@ -186,7 +177,7 @@ final class UploadedFile implements UploadedFileInterface
 	/**
 	 * @return int|null
 	 */
-	public function getSize(): ?int
+    public function getSize(): int|null
 	{
 		return $this->size;
 	}
@@ -202,7 +193,7 @@ final class UploadedFile implements UploadedFileInterface
 	/**
 	 * @return string|null
 	 */
-	public function getClientFilename(): ?string
+    public function getClientFilename(): string|null
 	{
 		return $this->clientFilename;
 	}
@@ -210,7 +201,7 @@ final class UploadedFile implements UploadedFileInterface
 	/**
 	 * @return string|null
 	 */
-	public function getClientMediaType(): ?string
+    public function getClientMediaType(): string|null
 	{
 		return $this->clientMediaType;
 	}
@@ -221,7 +212,7 @@ final class UploadedFile implements UploadedFileInterface
 	private function moveOrWriteFile(string $targetPath): void
 	{
 		if ($this->file) {
-			$isCliEnv = (!PHP_SAPI || strpos(PHP_SAPI, 'cli') === 0 || strpos(PHP_SAPI, 'phpdbg') === 0);
+            $isCliEnv = (!PHP_SAPI || str_starts_with(PHP_SAPI, 'cli') || str_starts_with(PHP_SAPI, 'phpdbg'));
 
 			if (!($isCliEnv ? rename($this->file, $targetPath) : move_uploaded_file($this->file, $targetPath))) {
 				throw new RuntimeException(sprintf('Uploaded file could not be moved to "%s".', $targetPath));

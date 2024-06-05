@@ -12,22 +12,21 @@ final class Stream implements StreamInterface
 	/**
 	 * @var resource|null
 	 */
-	private $resource;
+    private mixed $resource;
 
 	/**
 	 * Stream constructor.
-	 * @param $stream
+     *
+     * @param string $stream
 	 * @param string $mode
 	 */
-	public function __construct($stream = 'php://temp', string $mode = 'wb+')
+    public function __construct(string $stream = 'php://temp', string $mode = 'wb+')
 	{
-		if (is_string($stream)) {
 			$stream = ($stream === '') ? false : @fopen($stream, $mode);
 
 			if ($stream === false) {
 				throw new RuntimeException('Невозможно открыть поток');
 			}
-		}
 
 		if (!is_resource($stream) || get_resource_type($stream) !== 'stream') {
 			throw new InvalidArgumentException(
@@ -75,7 +74,7 @@ final class Stream implements StreamInterface
 	/**
 	 * @return int|null
 	 */
-	public function getSize(): ?int
+    public function getSize(): int|null
 	{
 		if ($this->resource === null) {
 			return null;
@@ -85,8 +84,8 @@ final class Stream implements StreamInterface
 		return isset($stats['size']) ? (int) $stats['size'] : null;
 	}
 
-	public function tell()
-	{
+    public function tell(): int
+    {
 		if (!$this->resource) {
 			throw new RuntimeException('Нет ресурса для указания текущей позиции');
 		}
@@ -118,7 +117,7 @@ final class Stream implements StreamInterface
 	 * @param int $offset
 	 * @param int $whence
 	 */
-	public function seek($offset, $whence = SEEK_SET): void
+    public function seek(int $offset, int $whence = SEEK_SET): void
 	{
 		if (!$this->resource) {
 			throw new RuntimeException('Нет ресурса для изменения позиции указателя');
@@ -148,20 +147,21 @@ final class Stream implements StreamInterface
 		}
 
 		return (
-			strpos($mode, 'w') !== false
-			|| strpos($mode, '+') !== false
-			|| strpos($mode, 'x') !== false
-			|| strpos($mode, 'c') !== false
-			|| strpos($mode, 'a') !== false
+            str_contains($mode, 'w') !== false
+            || str_contains($mode, '+')
+            || str_contains($mode, 'x') !== false
+            || str_contains($mode, 'c') !== false
+            || str_contains($mode, 'a') !== false
 		);
 	}
 
 	/**
 	 * @param string $string
+     *
 	 * @return false|int
 	 */
-	public function write($string)
-	{
+    public function write(string $string): int
+    {
 		if (!$this->resource) {
 			throw new RuntimeException('Нет ресурса для записи');
 		}
@@ -186,15 +186,16 @@ final class Stream implements StreamInterface
 			return false;
 		}
 
-		return (strpos($mode, 'r') !== false || strpos($mode, '+') !== false);
+        return (str_contains($mode, 'r') || str_contains($mode, '+'));
 	}
 
-	/**
-	 * @param int $length
-	 * @return false|string
-	 */
-	public function read($length)
-	{
+    /**
+     * @param int $length
+     *
+     * @return string
+     */
+    public function read(int $length): string
+    {
 		if (!$this->resource) {
 			throw new RuntimeException('Нет ресурса для чтения');
 		}
@@ -213,8 +214,8 @@ final class Stream implements StreamInterface
 	/**
 	 * @return false|string
 	 */
-	public function getContents()
-	{
+    public function getContents(): string
+    {
 		if (!$this->isReadable()) {
 			throw new RuntimeException('Невозможно прочитать данные из потока');
 		}
@@ -230,8 +231,8 @@ final class Stream implements StreamInterface
 	 * @param null $key
 	 * @return array|mixed|null
 	 */
-	public function getMetadata($key = null)
-	{
+    public function getMetadata($key = null): mixed
+    {
 		if (!$this->resource) {
 			return $key ? null : [];
 		}

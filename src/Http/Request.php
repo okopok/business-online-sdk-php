@@ -11,19 +11,9 @@ final class Request implements RequestInterface
 	use MessageTrait;
 
 	/**
-	 * @var string
-	 */
-	private $method = 'GET';
-
-	/**
 	 * @var string|null
 	 */
-	private $requestTarget = null;
-
-	/**
-	 * @var UriInterface
-	 */
-	private $uri;
+    private string|null $requestTarget = null;
 
 	/**
 	 * Request constructor.
@@ -33,9 +23,8 @@ final class Request implements RequestInterface
 	 * @param null $body
 	 * @param string $protocol
 	 */
-	public function __construct(string $method = 'GET', $uri = '', array $headers = [], $body = null, string $protocol = '1.1')
+    public function __construct(private string $method = 'GET', private UriInterface|string|null $uri = null, array $headers = [], mixed $body = null, string $protocol = '1.1')
 	{
-		$this->method = $method;
 		$this->setUri($uri);
 		$this->registerStream($body);
 		$this->registerHeaders($headers);
@@ -58,13 +47,7 @@ final class Request implements RequestInterface
 
 		if (is_string($uri)) {
 			$this->uri = new Uri($uri);
-			return;
 		}
-
-		throw new InvalidArgumentException(sprintf(
-			'Неверный формат URI - "%s". URI должен быть строкой, null либо реализовывать интерфейс "\Psr\Http\Message\UriInterface".',
-			(is_object($uri) ? get_class($uri) : gettype($uri))
-		));
 	}
 
 	/**
@@ -90,8 +73,8 @@ final class Request implements RequestInterface
 	 * @param mixed $requestTarget
 	 * @return $this|Request
 	 */
-	public function withRequestTarget($requestTarget)
-	{
+    public function withRequestTarget($requestTarget): RequestInterface
+    {
 		if ($requestTarget === $this->requestTarget) {
 			return $this;
 		}

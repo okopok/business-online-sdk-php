@@ -8,13 +8,12 @@ use bru\api\Http\Stream;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-
-use function curl_init;
-use function strtoupper;
-use function curl_setopt;
+use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
-use function curl_close;
+use function curl_init;
+use function curl_setopt;
+use function strtoupper;
 
 
 final class SimpleHttpClient implements ClientInterface
@@ -22,11 +21,12 @@ final class SimpleHttpClient implements ClientInterface
 
 	/**
 	 * @param RequestInterface $request
+     *
 	 * @return ResponseInterface
-	 * @throws HttpClientException
+     * @throws HttpClientException
 	 */
 	public function sendRequest(RequestInterface $request): ResponseInterface
-	{
+    {
 		$c = curl_init();
 
 		$url = (string)$request->getUri();
@@ -69,8 +69,8 @@ final class SimpleHttpClient implements ClientInterface
 
 		$responce = new Responce();
 
-		$responce = $responce->withStatus($status_code);
-		$responce = $responce->withBody($stream);
+        $responce->withStatus($status_code)
+            ->withBody($stream);
 
 		curl_close($c);
 
